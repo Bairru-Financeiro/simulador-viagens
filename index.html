@@ -40,6 +40,10 @@
   .btn-roxo:hover{background:var(--roxo-escuro)}
   .btn-linha{background:transparent;color:var(--roxo);border:1px solid var(--roxo)}
   .rodape{margin-top:auto;font-size:10.5px;color:var(--lilas);padding-top:8px}
+  .rodape{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left}
+  .rodape .pdf{display:inline-flex;align-items:center;gap:5px;color:#fff;text-decoration:underline;text-underline-offset:2px}
+  .rodape .pdf:hover{color:var(--lilas)}
+  .rodape .pdf svg{width:12px;height:12px;flex:none}
   /* ---------- conteúdo ---------- */
   main{padding:16px 22px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
   .topo{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
@@ -249,7 +253,7 @@
  "versao": {
   "politica_viagens": "Política de Viagens Corporativas 2026 – V01",
   "politica_reembolso": "Política de Reembolso e Transferência 2026 – V02",
-  "atualizado_em": "10/11/2026 12:36",
+  "atualizado_em": "10/11/2026 12:47",
   "fonte_historico": "Positivo turismo 2026.xlsx (11/2025 a 10/2026)"
  },
  "regras_politica": {
@@ -776,8 +780,11 @@
   const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 
   $('versao').textContent = semVersao(C.versao.politica_viagens);
-  $('rodape').innerHTML = 'Critérios: ' + semVersao(C.versao.politica_viagens) + ' e ' + semVersao(C.versao.politica_reembolso) +
-    (C.versao.atualizado_em ? '<br>Atualizado em ' + C.versao.atualizado_em : '');
+  const ICON_PDF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+  $('rodape').innerHTML = '<div>Critérios:</div>' +
+    `<a class="pdf" href="Politica_Viagens_Corporativas_BairrU.pdf" download>${ICON_PDF}Política de Viagens Corporativas (PDF)</a>` +
+    `<a class="pdf" href="Politica_Reembolso_BairrU.pdf" download>${ICON_PDF}Política de Reembolso (PDF)</a>` +
+    (C.versao.atualizado_em ? '<div>Atualizado em ' + C.versao.atualizado_em.split(' ')[0] + '</div>' : '');
   const dl = $('lista-cidades');
   C.cidades.forEach(c => { const o = document.createElement('option'); o.value = c.nome + ' - ' + c.uf; dl.appendChild(o); });
   const cidade = s => C.cidades.find(c => norm(c.nome) === norm(s));
