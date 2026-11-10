@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de Viagens – BairrU</title>
+<style>
+  :root{
+    --roxo:#7E29ED; --roxo-escuro:#5E17C4; --lilas:#E4D6FB; --lilas-claro:#F3ECFE;
+    --tinta:#231F20; --cinza:#4D4D4D; --muted:#6B6B6B; --linha:#E2E2E2;
+    --papel:#F8FBF8; --branco:#FFFFFF; --ok:#1B7F4B; --alerta:#9A5B00;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--papel);color:var(--tinta);
+    font-family:"TT Commons Pro","Open Sauce",Arial,Helvetica,sans-serif;font-size:13.5px;line-height:1.35}
+  .app{display:grid;grid-template-columns:300px 1fr;min-height:100vh}
+  /* ---------- painel roxo ---------- */
+  aside{background:var(--roxo);color:var(--branco);padding:20px 20px 16px;display:flex;flex-direction:column;gap:10px;
+    position:sticky;top:0;height:100vh;overflow-y:auto}
+  aside .logo{width:104px;height:auto}
+  .rotulo{font-size:10px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;margin-top:4px}
+  aside h1{font-size:23px;line-height:1.05;margin:0;font-weight:700}
+  aside .versao{color:var(--lilas);font-size:12px;margin-top:-4px}
+  .bloco{display:flex;flex-direction:column;gap:8px}
+  .bloco-tit{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--lilas);margin-top:6px}
+  label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:700}
+  .l2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  input,select{font:inherit;font-size:13px;font-weight:400;color:var(--tinta);background:var(--branco);
+    border:1px solid transparent;border-radius:8px;padding:6px 8px;width:100%;min-width:0}
+  input:focus,select:focus{outline:2px solid var(--lilas);outline-offset:1px}
+  .ajuda{font-size:11px;font-weight:400;color:var(--lilas)}
+  .manual{display:none;gap:8px;background:rgba(255,255,255,.12);border-radius:10px;padding:8px}
+  .manual.on{display:grid}
+  .check{flex-direction:row;align-items:center;gap:6px;font-weight:400}
+  .check input{width:auto}
+  .btn{font:inherit;font-weight:700;font-size:13px;border:none;border-radius:8px;padding:8px 12px;cursor:pointer}
+  .btn-branco{background:var(--branco);color:var(--roxo)}
+  .btn-branco:hover{background:var(--lilas)}
+  .btn-roxo{background:var(--roxo);color:#fff}
+  .btn-roxo:hover{background:var(--roxo-escuro)}
+  .btn-linha{background:transparent;color:var(--roxo);border:1px solid var(--roxo)}
+  .rodape{margin-top:auto;font-size:10.5px;color:var(--lilas);padding-top:8px}
+  /* ---------- conteúdo ---------- */
+  main{padding:16px 22px 22px;display:flex;flex-direction:column;gap:12px;min-width:0}
+  .topo{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .topo h2{margin:0;font-size:18px}
+  .assinatura{font-size:12px}
+  .destaque{background:var(--branco);border:1.5px solid var(--roxo);border-radius:10px;padding:7px 12px;font-weight:700;font-size:12.5px}
+  .destaque b{color:var(--roxo)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .u{border:1px solid #A9A9A9;border-top:none;border-radius:0 0 50% 50%/0 0 30% 30%;padding:8px 14px 18px;position:relative}
+  .u::before{content:"";position:absolute;left:-1px;right:-1px;top:0;border-top:1px solid #A9A9A9}
+  .kpi .lbl{font-size:11.5px;color:var(--cinza)}
+  .kpi .val{font-size:21px;font-weight:700;color:var(--roxo);line-height:1.15;white-space:nowrap}
+  .kpi .sub{font-size:11px;color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:12px}
+  .card{background:var(--branco);border-radius:12px;padding:12px 14px;border:1px solid var(--linha)}
+  .card h3{margin:0 0 8px;font-size:14px}
+  .card-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+  .card-top h3{margin:0}
+  /* barras */
+  .barras{display:flex;flex-direction:column;gap:5px}
+  .barra{display:grid;grid-template-columns:minmax(120px,max-content) 1fr 78px;align-items:center;gap:8px;font-size:12.5px}
+  .barra .trilho{height:11px;background:var(--lilas-claro);border-radius:0 3px 3px 0}
+  .barra .fill{height:11px;background:var(--roxo);border-radius:0 3px 3px 0;min-width:2px;display:block}
+  .barra .v{text-align:right;font-weight:700}
+  .barra:hover .fill{background:var(--roxo-escuro)}
+  .tip{position:fixed;pointer-events:none;background:var(--tinta);color:#fff;font-size:12px;padding:4px 8px;border-radius:6px;display:none;z-index:10}
+  /* tabelas */
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{background:var(--roxo);color:#fff;text-align:left;padding:5px 7px;font-weight:700;white-space:nowrap}
+  td{padding:4px 7px;border-bottom:1px solid var(--linha);vertical-align:top}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  tr.total td{font-weight:700;border-top:1.5px solid var(--tinta)}
+  .ctx{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:12px;white-space:nowrap}
+  .chip-area{background:var(--roxo);color:#fff}
+  .chip-proj{background:var(--lilas);color:var(--roxo-escuro)}
+  .chip-vazio{background:#FFF7DB;color:#9A5B00;border:1px dashed #E8A317}
+  .proj-bloco{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:10px;align-items:start}
+  .proj-bloco[hidden]{display:none}
+  .proj-bloco h4{margin:0 0 6px;font-size:12.5px}
+  tr.secao td{background:var(--roxo);color:#fff;font-weight:700;font-size:11.5px;letter-spacing:.04em}
+  tr.grupo td{background:var(--lilas-claro);font-weight:700;color:var(--tinta)}
+  tr.sub td:first-child{padding-left:20px;color:var(--cinza)}
+  /* campos obrigatórios */
+  .req{color:#FFD24D;font-weight:700;margin-left:2px}
+  main .req{color:#C2410C}
+  .obrig.vazio{background:#FFF7DB;border:2px solid #FFD24D}
+  main .obrig.vazio{border-color:#E8A317}
+  .legenda-req{font-size:11px;color:var(--lilas)}
+  .legenda-req .req{margin:0 2px 0 0}
+  .regra{color:var(--muted);font-size:11.5px}
+  .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:12px;background:var(--lilas-claro);color:var(--roxo);font-weight:700;white-space:nowrap}
+  .rolagem{overflow-x:auto}
+  /* alertas */
+  .alertas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+  .alertas li{display:grid;grid-template-columns:16px 1fr;gap:6px;align-items:start;font-size:12.5px}
+  .alertas svg{width:15px;height:15px;margin-top:1px}
+  .ok svg{stroke:var(--ok)} .ok b{color:var(--ok)}
+  .at svg{stroke:var(--alerta)} .at b{color:var(--alerta)}
+  .info svg{stroke:var(--roxo)}
+  .aprovador{font-size:16px;font-weight:700;color:var(--roxo)}
+  details{background:var(--branco);border:1px solid var(--linha);border-radius:12px;padding:8px 14px}
+  summary{cursor:pointer;font-weight:700;font-size:13px}
+  .premissas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+  .premissas label{color:var(--tinta)}
+  .premissas input{border:1px solid var(--linha)}
+  .nota{font-size:11px;color:var(--muted);margin:6px 0 0}
+  .erro{color:#B00020;font-weight:700}
+  .erro.neutro{color:var(--cinza);font-weight:400;background:var(--branco);border:1px dashed var(--roxo);border-radius:10px;padding:7px 12px}
+  /* orçamento */
+  .orc-cfg{display:grid;grid-template-columns:1.7fr 1.3fr 1fr auto auto;gap:8px;align-items:end;margin-bottom:8px}
+  .orc-cfg label{color:var(--tinta)}
+  .orc-cfg input,.orc-cfg select{border:1px solid var(--linha)}
+  .vazio{color:var(--muted);font-size:12.5px;padding:8px 0}
+  .rm{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:0 4px}
+  .rm:hover{color:#B00020}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--tinta);color:#fff;padding:7px 14px;border-radius:8px;font-size:12.5px;display:none;z-index:20}
+  @media (max-width:1100px){.proj-bloco{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.premissas{grid-template-columns:repeat(2,1fr)}.orc-cfg{grid-template-columns:1fr 1fr}}
+  @media (max-width:760px){.app{grid-template-columns:1fr}aside{position:static;height:auto}main{padding:14px 12px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <img class="logo" alt="BairrU" src="data:image/png;base64,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">
+    <div class="rotulo">Simulador</div>
+    <h1>Viagens Corporativas</h1>
+    <div class="versao" id="versao"></div>
+
+    <form id="f" class="bloco" onsubmit="return false">
+      <div class="bloco-tit">Viagem</div>
+      <div class="legenda-req"><span class="req">*</span>preenchimento obrigatório</div>
+      <label><span>Origem<span class="req">*</span></span> <input id="origem" class="obrig" list="lista-cidades" placeholder="Digite a cidade" autocomplete="off"></label>
+      <label><span>Destino<span class="req">*</span></span> <input id="destino" class="obrig" list="lista-cidades" placeholder="Digite a cidade" autocomplete="off">
+        <span class="ajuda">Fora da lista? Digite e informe a distância.</span></label>
+      <div class="manual" id="manual">
+        <label><span>Distância rodoviária (km, só ida)<span class="req">*</span></span> <input id="km_manual" class="obrig" type="number" min="1" step="1"></label>
+        <label class="check"><input id="cap_manual" type="checkbox"> Capital ou região metropolitana</label>
+      </div>
+      <div class="l2">
+        <label><span>Ida<span class="req">*</span></span> <input id="ida" class="obrig" type="date"></label>
+        <label><span>Volta<span class="req">*</span></span> <input id="volta" class="obrig" type="date"></label>
+      </div>
+      <div class="l2">
+        <label><span>Viajantes<span class="req">*</span></span> <input id="pessoas" class="obrig" type="number" min="1" placeholder="Qtde."></label>
+        <label><span>Transporte<span class="req">*</span></span> <select id="modal" class="obrig"><option value="">Selecione…</option></select></label>
+      </div>
+      <label class="check"><input id="cafe" type="checkbox"> Hotel com café da manhã</label>
+
+      <div class="bloco-tit">Adicionar ao orçamento</div>
+      <label>Descrição (opcional) <input id="desc" placeholder="Ex.: visita à obra, feira, treinamento"></label>
+      <div class="l2">
+        <label>Repetir (vezes) <input id="reps" type="number" min="1" placeholder="1"></label>
+        <label>A cada (meses) <input id="intervalo" type="number" min="1" placeholder="1"></label>
+      </div>
+      <button type="button" class="btn btn-branco" id="btn-add">+ Adicionar viagem ao orçamento</button>
+    </form>
+    <div class="rodape" id="rodape"></div>
+  </aside>
+
+  <main>
+    <div class="topo">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h2 id="titulo-sim">Simulação da viagem</h2><span class="ctx" id="ctx-topo"></span></div>
+      <span class="assinatura">BairrU</span>
+    </div>
+    <div class="destaque"><b>IMPORTANTE:</b> toda viagem e todo reembolso só são aprovados se houver orçamento disponível no centro de custo da área.</div>
+    <div id="erro" class="erro" hidden></div>
+
+    <section class="kpis" aria-label="Resumo">
+      <div class="u kpi"><div class="lbl">Custo estimado</div><div class="val" id="k_total">–</div><div class="sub" id="k_total_sub"></div></div>
+      <div class="u kpi"><div class="lbl">Máximo nos itens com teto</div><div class="val" id="k_lim">–</div><div class="sub">hotel, refeição e lavanderia</div></div>
+      <div class="u kpi"><div class="lbl">Período</div><div class="val" id="k_dias">–</div><div class="sub" id="k_dias_sub"></div></div>
+      <div class="u kpi"><div class="lbl">Distância (aprox.)</div><div class="val" id="k_km">–</div><div class="sub" id="k_km_sub"></div></div>
+    </section>
+
+    <div class="grid2">
+      <section class="card">
+        <div class="card-top"><h3>Composição do custo estimado</h3><span class="ctx" id="ctx-comp"></span></div>
+        <div class="barras" id="barras" role="list"></div>
+      </section>
+      <section class="card">
+        <h3>Antecedência e aprovação</h3>
+        <ul class="alertas" id="alertas"></ul>
+        <div style="margin-top:8px"><span class="regra">Quem aprova:</span> <span class="aprovador" id="aprovador">–</span>
+          <div class="regra" id="aprovador_obs"></div></div>
+      </section>
+    </div>
+
+    <details>
+      <summary>Detalhamento da viagem simulada</summary>
+      <div class="rolagem" style="margin-top:8px">
+        <table>
+          <thead><tr><th>Item</th><th>Como foi calculado</th><th>Quem paga</th><th class="num">Estimativa</th><th class="num">Limite</th></tr></thead>
+          <tbody id="tabela"></tbody>
+        </table>
+      </div>
+      <p class="nota">Hotel, refeição e lavanderia usam os limites da política; aéreo, ônibus, locação e táxi/app usam valores de referência; combustível usa o preço das premissas. O valor real depende das cotações da Gestora de Viagens e dos comprovantes.</p>
+    </details>
+
+    <section class="card">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h3>Orçamento de viagens da área</h3><span class="ctx" id="ctx-orc"></span></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-linha" id="btn-limpar" type="button">Limpar lista</button>
+          <button class="btn btn-roxo" id="btn-excel" type="button">Baixar Excel</button>
+        </div>
+      </div>
+      <div class="orc-cfg">
+        <label><span>Área / Centro de Custo<span class="req">*</span></span> <select id="area" class="obrig"></select></label>
+        <label><span>Projeto<span class="req">*</span></span> <select id="projeto" class="obrig"></select></label>
+        <label><span>Ano</span> <select id="ano"></select></label>
+        <div class="kpi"><div class="lbl">Viagens</div><div class="val" id="o_qtd" style="font-size:18px">0</div></div>
+        <div class="kpi"><div class="lbl">Total do orçamento</div><div class="val" id="o_total" style="font-size:18px">R$ 0</div></div>
+      </div>
+      <div class="rolagem">
+        <table>
+          <thead><tr><th>Descrição</th><th>Área / Projeto</th><th>Rota</th><th>Ida</th><th class="num">Dias</th><th class="num">Viaj.</th><th>Transporte</th><th class="num">Vezes</th><th class="num">Total</th><th></th></tr></thead>
+          <tbody id="lista"></tbody>
+        </table>
+      </div>
+      <div class="proj-bloco" id="proj-bloco" hidden><div><h4>Total por área e projeto</h4><div class="barras" id="barras-proj" role="list"></div></div><div><h4>Total por categoria</h4><div class="barras" id="barras-cat" role="list"></div></div></div>
+      <div id="resumo-mensal" class="rolagem" style="margin-top:10px"></div>
+      <p class="nota" id="orc-nota">Monte o orçamento simulando cada viagem e clicando em “Adicionar viagem ao orçamento”. Hotel, refeição, lavanderia, táxi/app e locação são distribuídos pelos dias da viagem; passagens e combustível ficam no mês da ida. A lista fica salva neste navegador.</p>
+    </section>
+
+    <details>
+      <summary>Premissas da simulação (ajustáveis)</summary>
+      <div class="premissas">
+        <label>Tarifa aérea por trecho (R$)<input id="p_aereo" type="number" step="1"></label>
+        <label>Gasolina (R$/litro)<input id="p_gas" type="number" step="0.01"></label>
+        <label>Táxi/app por corrida (R$)<input id="p_taxi" type="number" step="1"></label>
+        <label>Corridas locais por dia<input id="p_corridas" type="number" step="1" min="0"></label>
+        <label>Ônibus (R$/km)<input id="p_onibus" type="number" step="0.01"></label>
+        <label>Locação (R$/diária)<input id="p_loc" type="number" step="1"></label>
+        <label>Pedágio (R$/km)<input id="p_ped" type="number" step="0.01"></label>
+        <label>Hotel estimado (R$/diária)<input id="p_hotel" type="number" step="1"></label>
+      </div>
+      <p class="nota">Tarifa aérea e diária de hotel são preenchidas com a referência do destino, quando existir.</p>
+    </details>
+  </main>
+</div>
+<datalist id="lista-cidades"></datalist>
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast"></div>
+
+<script id="criterios" type="application/json">{
+ "versao": {
+  "politica_viagens": "Política de Viagens Corporativas 2026 – V01",
+  "politica_reembolso": "Política de Reembolso e Transferência 2026 – V02",
+  "atualizado_em": "10/11/2026 09:12",
+  "fonte_historico": "Positivo turismo 2026.xlsx (11/2025 a 10/2026)"
+ },
+ "regras_politica": {
+  "aereo_km_minimo": 400,
+  "antecedencia_dias": {
+   "aereo": 15,
+   "hotel_individual": 5,
+   "hotel_grupo": 10,
+   "locacao": 5
+  },
+  "grupo_minimo_pessoas": 6,
+  "hotel_teto_diaria": {
+   "capital_ou_rm": 400.0,
+   "demais": 300.0
+  },
+  "refeicao_viagem_dia": 150.0,
+  "lavanderia_valor_semana": 60.0,
+  "lavanderia_dias_minimos": 5,
+  "km_consumo_km_por_litro": 10,
+  "km_fator": 1.4,
+  "taxi_app_km_maximo": 30,
+  "adiantamento_dias_uteis_antes": 5
+ },
+ "estimativas": {
+  "_comentario": "Valores de referência para simular custos que a política não limita. Recalculados pelo script a partir do relatório da agência, quando disponível.",
+  "aereo_trecho_mediana": 504,
+  "aereo_por_destino": {
+   "CAMPINAS": {
+    "n": 27,
+    "mediana": 1164
+   },
+   "CHAPECO": {
+    "n": 3,
+    "mediana": 1758
+   },
+   "GUARULHOS": {
+    "n": 9,
+    "mediana": 453
+   },
+   "MARINGA": {
+    "n": 3,
+    "mediana": 1377
+   },
+   "SAO PAULO": {
+    "n": 173,
+    "mediana": 462
+   }
+  },
+  "hotel_por_cidade": {
+   "CAMPO MOURAO": {
+    "n": 23,
+    "mediana": 290
+   },
+   "CASCAVEL": {
+    "n": 5,
+    "mediana": 313
+   },
+   "CHAPECO": {
+    "n": 45,
+    "mediana": 298
+   },
+   "COTIA": {
+    "n": 13,
+    "mediana": 450
+   },
+   "CURITIBA": {
+    "n": 26,
+    "mediana": 322
+   },
+   "FLORIANOPOLIS": {
+    "n": 3,
+    "mediana": 377
+   },
+   "GUARAPUAVA": {
+    "n": 15,
+    "mediana": 355
+   },
+   "ITAJAI": {
+    "n": 7,
+    "mediana": 455
+   },
+   "MARINGA": {
+    "n": 17,
+    "mediana": 301
+   },
+   "SAO JOSE DOS PINHAIS": {
+    "n": 5,
+    "mediana": 377
+   },
+   "SAO PAULO": {
+    "n": 8,
+    "mediana": 402
+   },
+   "UBERLANDIA": {
+    "n": 3,
+    "mediana": 582
+   }
+  },
+  "hotel_diaria_mediana": 325,
+  "onibus_por_km": 0.71,
+  "locacao_diaria": 311,
+  "taxi_app_trecho": 45,
+  "deslocamentos_locais_por_dia": 2,
+  "km_locais_por_dia_carro": 20,
+  "gasolina_litro": 6.5,
+  "pedagio_por_km": 0.1,
+  "fator_rodoviario": 1.25
+ },
+ "cidades": [
+  {
+   "nome": "Curitiba",
+   "uf": "PR",
+   "lat": -25.43,
+   "lon": -49.27,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "São José dos Pinhais",
+   "uf": "PR",
+   "lat": -25.53,
+   "lon": -49.21,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Pinhais",
+   "uf": "PR",
+   "lat": -25.44,
+   "lon": -49.19,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Ponta Grossa",
+   "uf": "PR",
+   "lat": -25.09,
+   "lon": -50.16,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Guarapuava",
+   "uf": "PR",
+   "lat": -25.39,
+   "lon": -51.46,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Campo Mourão",
+   "uf": "PR",
+   "lat": -24.05,
+   "lon": -52.38,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Maringá",
+   "uf": "PR",
+   "lat": -23.42,
+   "lon": -51.94,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Londrina",
+   "uf": "PR",
+   "lat": -23.31,
+   "lon": -51.16,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Cascavel",
+   "uf": "PR",
+   "lat": -24.96,
+   "lon": -53.46,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Toledo",
+   "uf": "PR",
+   "lat": -24.72,
+   "lon": -53.74,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Umuarama",
+   "uf": "PR",
+   "lat": -23.77,
+   "lon": -53.33,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Foz do Iguaçu",
+   "uf": "PR",
+   "lat": -25.55,
+   "lon": -54.59,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Pato Branco",
+   "uf": "PR",
+   "lat": -26.23,
+   "lon": -52.67,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Paranaguá",
+   "uf": "PR",
+   "lat": -25.52,
+   "lon": -48.51,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Florianópolis",
+   "uf": "SC",
+   "lat": -27.59,
+   "lon": -48.55,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Joinville",
+   "uf": "SC",
+   "lat": -26.3,
+   "lon": -48.85,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Blumenau",
+   "uf": "SC",
+   "lat": -26.92,
+   "lon": -49.07,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Itajaí",
+   "uf": "SC",
+   "lat": -26.91,
+   "lon": -48.66,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Navegantes",
+   "uf": "SC",
+   "lat": -26.9,
+   "lon": -48.65,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Balneário Camboriú",
+   "uf": "SC",
+   "lat": -26.99,
+   "lon": -48.63,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Chapecó",
+   "uf": "SC",
+   "lat": -27.1,
+   "lon": -52.62,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Criciúma",
+   "uf": "SC",
+   "lat": -28.68,
+   "lon": -49.37,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Porto Alegre",
+   "uf": "RS",
+   "lat": -30.03,
+   "lon": -51.23,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Caxias do Sul",
+   "uf": "RS",
+   "lat": -29.17,
+   "lon": -51.18,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Santa Maria",
+   "uf": "RS",
+   "lat": -29.68,
+   "lon": -53.81,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "São Paulo",
+   "uf": "SP",
+   "lat": -23.55,
+   "lon": -46.63,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Guarulhos",
+   "uf": "SP",
+   "lat": -23.45,
+   "lon": -46.53,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Cotia",
+   "uf": "SP",
+   "lat": -23.6,
+   "lon": -46.92,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Campinas",
+   "uf": "SP",
+   "lat": -22.91,
+   "lon": -47.06,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Sorocaba",
+   "uf": "SP",
+   "lat": -23.5,
+   "lon": -47.46,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Santos",
+   "uf": "SP",
+   "lat": -23.96,
+   "lon": -46.33,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Ribeirão Preto",
+   "uf": "SP",
+   "lat": -21.18,
+   "lon": -47.81,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Rio de Janeiro",
+   "uf": "RJ",
+   "lat": -22.91,
+   "lon": -43.17,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Belo Horizonte",
+   "uf": "MG",
+   "lat": -19.92,
+   "lon": -43.94,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Uberlândia",
+   "uf": "MG",
+   "lat": -18.92,
+   "lon": -48.28,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Vitória",
+   "uf": "ES",
+   "lat": -20.32,
+   "lon": -40.34,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Brasília",
+   "uf": "DF",
+   "lat": -15.79,
+   "lon": -47.88,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Goiânia",
+   "uf": "GO",
+   "lat": -16.69,
+   "lon": -49.25,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Campo Grande",
+   "uf": "MS",
+   "lat": -20.47,
+   "lon": -54.62,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Dourados",
+   "uf": "MS",
+   "lat": -22.22,
+   "lon": -54.81,
+   "capital_ou_rm": false
+  },
+  {
+   "nome": "Cuiabá",
+   "uf": "MT",
+   "lat": -15.6,
+   "lon": -56.1,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Salvador",
+   "uf": "BA",
+   "lat": -12.97,
+   "lon": -38.5,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Recife",
+   "uf": "PE",
+   "lat": -8.05,
+   "lon": -34.88,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Fortaleza",
+   "uf": "CE",
+   "lat": -3.73,
+   "lon": -38.53,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Natal",
+   "uf": "RN",
+   "lat": -5.79,
+   "lon": -35.21,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "João Pessoa",
+   "uf": "PB",
+   "lat": -7.12,
+   "lon": -34.86,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Maceió",
+   "uf": "AL",
+   "lat": -9.67,
+   "lon": -35.74,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Aracaju",
+   "uf": "SE",
+   "lat": -10.91,
+   "lon": -37.07,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Teresina",
+   "uf": "PI",
+   "lat": -5.09,
+   "lon": -42.8,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "São Luís",
+   "uf": "MA",
+   "lat": -2.53,
+   "lon": -44.3,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Belém",
+   "uf": "PA",
+   "lat": -1.46,
+   "lon": -48.5,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Manaus",
+   "uf": "AM",
+   "lat": -3.12,
+   "lon": -60.02,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Palmas",
+   "uf": "TO",
+   "lat": -10.18,
+   "lon": -48.33,
+   "capital_ou_rm": true
+  },
+  {
+   "nome": "Porto Velho",
+   "uf": "RO",
+   "lat": -8.76,
+   "lon": -63.9,
+   "capital_ou_rm": true
+  }
+ ]
+}</script>
+<script>
+(function(){
+  const C = JSON.parse(document.getElementById('criterios').textContent);
+  const R = C.regras_politica, E = C.estimativas;
+  const $ = id => document.getElementById(id);
+  const BRL = v => (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const n2 = v => Number(v).toFixed(2).replace('.',',');
+  const norm = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s*-\s*[A-Z]{2}$/,'').trim();
+  const semVersao = s => (s||'').replace(/\s*\d{4}\s*[–-]\s*V\d+\s*$/,'');
+  const ICON = {
+    ok:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    at:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    info:'<svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+  };
+  // categorias do orçamento: grupo → aberturas (ordem das linhas no Excel)
+  const GRUPOS = [
+    ['Hospedagem',   ['Hotel','Lavanderia']],
+    ['Passagens',    ['Passagem aérea','Ônibus']],
+    ['Veículos',     ['Locação de veículo','Combustível','Quilômetro rodado','Pedágio']],
+    ['Deslocamento', ['Táxi / aplicativo']],
+    ['Refeição',     ['Refeição']]];
+  const CATS = GRUPOS.flatMap(g => g[1]);
+  const catDe = c => c === 'Hospedagem' ? 'Hotel' : c;   // viagens salvas antes da hierarquia
+  const AREAS = ['Diretoria','FP&A','Controladoria','Jurídico','Gente & Gestão','CEx','Tecnologia','Engenharia',
+    'Obra','Desenvolvimento Imobiliário','Incorporação','Properties','Aprovação','Produto','Servicer',
+    'Comercial SP','Comercial Sul','Comercial DI','Marketing Sul','Marketing SP','Marketing','DI']
+    .sort((a,b) => a.localeCompare(b,'pt-BR',{sensitivity:'base'}));
+  const PROJETOS = ['Corporativo Holding','Corporativo DI','Novos Negócios','Cerejeiras','Tramonto','Villa Roca','PARC','Hub']
+    .sort((a,b) => a.localeCompare(b,'pt-BR',{sensitivity:'base'})).concat('Outros');   // "Outros" sempre por último
+  const SEM_PROJ = 'Projeto não informado';
+  const projDe = vg => vg.projeto || SEM_PROJ;
+  const SEM_AREA = 'Área não informada';
+  const areaDe = vg => vg.area || SEM_AREA;
+  const ordem = (a,b) => (a===SEM_PROJ||a===SEM_AREA)-(b===SEM_PROJ||b===SEM_AREA) || (a==='Outros')-(b==='Outros') || a.localeCompare(b,'pt-BR');
+  const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+  $('versao').textContent = semVersao(C.versao.politica_viagens);
+  $('rodape').innerHTML = 'Critérios: ' + semVersao(C.versao.politica_viagens) + ' e ' + semVersao(C.versao.politica_reembolso) +
+    (C.versao.atualizado_em ? '<br>Atualizado em ' + C.versao.atualizado_em : '');
+  const dl = $('lista-cidades');
+  C.cidades.forEach(c => { const o = document.createElement('option'); o.value = c.nome + ' - ' + c.uf; dl.appendChild(o); });
+  const cidade = s => C.cidades.find(c => norm(c.nome) === norm(s));
+
+  const P = {p_aereo:E.aereo_trecho_mediana, p_gas:E.gasolina_litro, p_taxi:E.taxi_app_trecho, p_corridas:E.deslocamentos_locais_por_dia,
+             p_onibus:E.onibus_por_km, p_loc:E.locacao_diaria, p_ped:E.pedagio_por_km, p_hotel:E.hotel_diaria_mediana};
+  Object.entries(P).forEach(([k,v]) => $(k).value = v);
+  const tocado = new Set();
+  Object.keys(P).forEach(k => $(k).addEventListener('input', () => { tocado.add(k); calc(); }));
+
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const d1 = new Date(hoje); d1.setDate(d1.getDate()+20); const d2 = new Date(d1); d2.setDate(d2.getDate()+2);
+  const anoOrc = hoje.getMonth() >= 9 ? hoje.getFullYear()+1 : hoje.getFullYear();
+
+  function hav(a,b){ const r=x=>x*Math.PI/180;
+    const dl=r(b.lat-a.lat), dn=r(b.lon-a.lon);
+    const h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dn/2)**2;
+    return 2*6371*Math.asin(Math.sqrt(h)); }
+  const parseD = s => { const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); };
+  const fmtD = d => d.toLocaleDateString('pt-BR');
+
+  let ultimoModal = null;
+  function opcoesModal(km){
+    const sel = $('modal'), atual = sel.value;
+    const ops = km > R.aereo_km_minimo
+      ? [['aereo','Aéreo'],['onibus','Ônibus'],['locado','Veículo locado'],['proprio','Veículo próprio']]
+      : [['onibus','Ônibus'],['locado','Veículo locado'],['proprio','Veículo próprio']];
+    const chave = ops.map(o=>o[0]).join();
+    if (chave !== ultimoModal){
+      sel.innerHTML = '<option value="">Selecione…</option>' + ops.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');
+      sel.value = ops.some(o=>o[0]===atual) ? atual : '';
+      ultimoModal = chave;
+    }
+    return sel.value;
+  }
+
+  let atual = null;   // última simulação válida
+  function calc(){
+    atual = null; $('erro').hidden = true; limparSim();
+    const o = cidade($('origem').value), dRaw = $('destino').value.trim();
+    const d = cidade(dRaw);
+    $('manual').classList.toggle('on', !!dRaw && !d);
+    if (!$('origem').value.trim() && !dRaw) return mostrarErro('Preencha os campos obrigatórios (*) da viagem para ver a simulação.', true);
+    if (!o) return mostrarErro('Escolha a origem na lista de cidades.');
+    if (!dRaw) return mostrarErro('Digite o destino para simular.');
+    let km, capital;
+    if (d){ km = Math.round(hav(o,d) * E.fator_rodoviario); capital = d.capital_ou_rm; }
+    else { km = Number($('km_manual').value); capital = $('cap_manual').checked;
+           if (!km) return mostrarErro('Informe a distância rodoviária até ' + dRaw + '.'); }
+    if (!$('ida').value || !$('volta').value) return mostrarErro('Informe as datas de ida e volta.');
+    const ida = parseD($('ida').value), volta = parseD($('volta').value);
+    if (volta < ida) return mostrarErro('A data de volta é anterior à de ida.');
+    const dias = Math.round((volta-ida)/864e5) + 1, noites = dias - 1;
+    const pessoas = Math.max(1, Number($('pessoas').value)||1);
+    const modal = opcoesModal(km);
+    if (!modal) return mostrarErro('Escolha o transporte.', true);
+    const destNome = d ? d.nome : dRaw;
+
+    const hA = E.aereo_por_destino[norm(destNome)] || E.aereo_por_destino[norm(o.nome)];
+    if (!tocado.has('p_aereo')) $('p_aereo').value = hA ? hA.mediana : E.aereo_trecho_mediana;
+    const hH = E.hotel_por_cidade[norm(destNome)];
+    if (!tocado.has('p_hotel')) $('p_hotel').value = hH ? hH.mediana : E.hotel_diaria_mediana;
+    const v = k => Number($(k).value)||0;
+
+    const teto = capital ? R.hotel_teto_diaria.capital_ou_rm : R.hotel_teto_diaria.demais;
+    const itens = [];
+    // tipo: 'ida' = lança no mês da ida; 'dia' = distribui pelos dias; 'noite' = distribui pelas noites
+    // itens de carro valem por veículo (até 4 pessoas por carro); os demais, por pessoa
+    const carros = Math.ceil(pessoas/4);
+    const add = (cat, calcTxt, quem, est, lim, tipo, porVeiculo) => itens.push({cat, calcTxt, quem, est, lim, tipo, mult: porVeiculo ? carros : pessoas});
+    const kmL = R.km_consumo_km_por_litro;
+
+    if (modal === 'aereo'){
+      add('Passagem aérea', `2 trechos × ${BRL(v('p_aereo'))}` + (hA ? ` (referência ${destNome})` : ''), 'Bairru (Gestora)', 2*v('p_aereo'), null, 'ida');
+    } else if (modal === 'onibus'){
+      add('Ônibus', `${km*2} km × R$ ${n2(v('p_onibus'))}/km`, 'Colaborador', km*2*v('p_onibus'), null, 'ida');
+    } else if (modal === 'locado'){
+      add('Locação de veículo', `${dias} diária(s) × ${BRL(v('p_loc'))}`, 'Bairru (Gestora)', dias*v('p_loc'), null, 'dia', true);
+      const kmTot = km*2 + dias*E.km_locais_por_dia_carro;
+      add('Combustível', `${kmTot} km ÷ ${kmL} km/l × R$ ${n2(v('p_gas'))}`, 'Colaborador', kmTot/kmL*v('p_gas'), null, 'ida', true);
+      add('Pedágio', `${km*2} km × R$ ${n2(v('p_ped'))}/km`, 'Colaborador', km*2*v('p_ped'), null, 'ida', true);
+    } else {
+      const kmTot = km*2 + dias*E.km_locais_por_dia_carro, porKm = v('p_gas')/kmL*R.km_fator;
+      add('Quilômetro rodado', `${kmTot} km × R$ ${n2(porKm)}/km (gasolina ÷ ${kmL} × ${n2(R.km_fator)})`, 'Colaborador', kmTot*porKm, null, 'ida', true);
+      add('Pedágio', `${km*2} km × R$ ${n2(v('p_ped'))}/km`, 'Colaborador', km*2*v('p_ped'), null, 'ida', true);
+    }
+    const comCarro = modal === 'locado' || modal === 'proprio';
+    const corridas = comCarro ? 0 : 4 + dias*v('p_corridas');
+    if (corridas > 0) add('Táxi / aplicativo', `${corridas} corridas (até ${R.taxi_app_km_maximo} km) × ${BRL(v('p_taxi'))}`, 'Colaborador', corridas*v('p_taxi'), null, 'dia');
+    if (noites > 0){
+      const diaria = Math.min(v('p_hotel'), teto);
+      add('Hotel', `${noites} noite(s) × ${BRL(diaria)}` + (v('p_hotel') > teto ? ' (no teto)' : '') + ` · teto ${BRL(teto)}`, 'Bairru (Gestora)', noites*diaria, noites*teto, 'noite');
+    }
+    add('Refeição', `${dias} dia(s) × até ${BRL(R.refeicao_viagem_dia)}` + ($('cafe').checked ? '' : ' (com café)'), 'Colaborador', dias*R.refeicao_viagem_dia, dias*R.refeicao_viagem_dia, 'dia');
+    if (dias > R.lavanderia_dias_minimos){
+      const sem = Math.ceil(dias/7);
+      add('Lavanderia', `${sem} semana(s) × até ${BRL(R.lavanderia_valor_semana)}`, 'Colaborador', sem*R.lavanderia_valor_semana, sem*R.lavanderia_valor_semana, 'dia');
+    }
+
+    const total = itens.reduce((s,i)=>s+i.est*i.mult,0);
+    const limTot = itens.filter(i=>i.lim!==null).reduce((s,i)=>s+i.lim*i.mult,0);
+    const reembolso = itens.filter(i=>i.quem==='Colaborador').reduce((s,i)=>s+i.est*i.mult,0);
+
+    $('titulo-sim').textContent = `${o.nome} → ${destNome}`;
+    $('k_total').textContent = BRL(total);
+    $('k_total_sub').textContent = `${BRL(reembolso)} via reembolso`;
+    $('k_lim').textContent = BRL(limTot);
+    $('k_dias').textContent = `${dias} dia${dias>1?'s':''}`;
+    $('k_dias_sub').textContent = `${noites} noite${noites!==1?'s':''} · ${pessoas} viajante${pessoas>1?'s':''}`;
+    $('k_km').textContent = `${km.toLocaleString('pt-BR')} km`;
+    $('k_km_sub').textContent = (km > R.aereo_km_minimo ? 'aéreo permitido' : `até ${R.aereo_km_minimo} km: sem aéreo`) + (capital ? ' · capital/RM' : '');
+
+    const max = Math.max(...itens.map(i=>i.est*i.mult), 1);
+    $('barras').innerHTML = itens.map(i => { const val=i.est*i.mult, pct = total ? Math.round(val/total*100) : 0;
+      return `<div class="barra" role="listitem" data-tip="${i.cat}: ${BRL(val)} (${pct}% do total)"><span>${i.cat}</span>
+        <span class="trilho"><span class="fill" style="width:${val/max*100}%"></span></span><span class="v">${BRL(val)}</span></div>`; }).join('');
+    $('tabela').innerHTML = itens.map(i => `<tr><td>${i.cat}</td><td class="regra">${i.calcTxt}</td><td><span class="tag">${i.quem}</span></td>
+      <td class="num">${BRL(i.est*i.mult)}</td><td class="num">${i.lim!==null ? BRL(i.lim*i.mult) : '<span class="regra">–</span>'}</td></tr>`).join('') +
+      `<tr class="total"><td colspan="3">Total</td><td class="num">${BRL(total)}</td><td></td></tr>`;
+
+    // antecedência e aprovação
+    const ant = Math.round((ida - hoje)/864e5), grupo = pessoas >= R.grupo_minimo_pessoas;
+    const regras = [];
+    if (modal === 'aereo') regras.push(['Passagem aérea', R.antecedencia_dias.aereo]);
+    if (noites > 0) regras.push([grupo ? `Hotel em grupo (${R.grupo_minimo_pessoas}+)` : 'Hotel', grupo ? R.antecedencia_dias.hotel_grupo : R.antecedencia_dias.hotel_individual]);
+    if (modal === 'locado') regras.push(['Locação', R.antecedencia_dias.locacao]);
+    let foraPrazo = false; const li = [];
+    regras.forEach(([n,min]) => { const ok = ant >= min; if (!ok) foraPrazo = true;
+      li.push(`<li class="${ok?'ok':'at'}">${ok?ICON.ok:ICON.at}<span><b>${ok?'No prazo':'Fora do prazo'}:</b> ${n} pede ${min} dias; faltam ${ant}.</span></li>`); });
+    if (reembolso > 0) li.push(`<li class="info">${ICON.info}<span>Adiantamento: pedir com ${R.adiantamento_dias_uteis_antes} dias úteis; prestar contas em até 7 dias úteis.</span></li>`);
+    if (modal === 'proprio') li.push(`<li class="info">${ICON.info}<span>Veículo próprio: autorização do gestor, declaração assinada e cupom de abastecimento.</span></li>`);
+    $('alertas').innerHTML = li.join('');
+    let ap = 'Gestor imediato', obs = 'Dentro das regras da política.';
+    if (ant <= 1){ ap = 'Diretoria Financeira'; obs = 'Saída muito próxima: viagem emergencial exige aprovação por escrito.'; }
+    else if (foraPrazo){ ap = 'Diretor imediato'; obs = 'Fora do prazo, sem custo adicional. Com valores fora da política, aprova a Controladoria.'; }
+    $('aprovador').textContent = ap; $('aprovador_obs').textContent = obs;
+
+    atual = { origem:o.nome, destino:destNome, ida:$('ida').value, volta:$('volta').value, dias, noites, pessoas,
+      transporte: $('modal').selectedOptions[0].text, total,
+      itens: itens.map(i => ({cat:i.cat, tipo:i.tipo, val:i.est*i.mult})) };
+  }
+  function mostrarErro(m, neutro){ const e=$('erro'); e.textContent=m; e.hidden=false; e.classList.toggle('neutro', !!neutro); }
+  function limparSim(){
+    ['k_total','k_lim','k_dias','k_km'].forEach(id => $(id).textContent = '–');
+    ['k_total_sub','k_dias_sub','k_km_sub','aprovador_obs'].forEach(id => $(id).textContent = '');
+    $('barras').innerHTML = ''; $('tabela').innerHTML = ''; $('alertas').innerHTML = '';
+    $('aprovador').textContent = '–'; $('titulo-sim').textContent = 'Simulação da viagem';
+  }
+
+  ['origem','destino','km_manual','cap_manual','ida','volta','pessoas','modal','cafe'].forEach(id => {
+    $(id).addEventListener('input', calc); $(id).addEventListener('change', calc); });
+  $('destino').addEventListener('input', () => { tocado.delete('p_aereo'); tocado.delete('p_hotel'); });
+  const tip = $('tip');
+  $('barras').addEventListener('mousemove', e => { const b = e.target.closest('.barra');
+    if (!b){ tip.style.display='none'; return; } tip.textContent = b.dataset.tip; tip.style.display='block';
+    tip.style.left = (e.clientX+12)+'px'; tip.style.top = (e.clientY+12)+'px'; });
+  $('barras').addEventListener('mouseleave', () => tip.style.display='none');
+  ['barras-proj','barras-cat'].forEach(id => { $(id).addEventListener('mousemove', e => { const b = e.target.closest('.barra');
+      if (!b){ tip.style.display='none'; return; } tip.textContent = b.dataset.tip; tip.style.display='block';
+      tip.style.left = (e.clientX+12)+'px'; tip.style.top = (e.clientY+12)+'px'; });
+    $(id).addEventListener('mouseleave', () => tip.style.display='none'); });
+
+  // ================= ORÇAMENTO DA ÁREA =================
+  const CHAVE = 'bairru_orcamento_viagens_v1';
+  let orc = { area:'', projeto:'', ano:'', viagens:[] };
+  try { const s = localStorage.getItem(CHAVE); if (s) orc = Object.assign(orc, JSON.parse(s)); } catch(e) {}
+  Object.assign(orc, { area:'', projeto:'', ano:'' }); delete orc.mes_ini; delete orc.mes_fim;
+  const salvar = () => { try { localStorage.setItem(CHAVE, JSON.stringify(orc)); } catch(e) {} };
+  $('area').innerHTML = '<option value="">Selecione a área…</option>';
+  AREAS.forEach(a => $('area').appendChild(new Option(a, a)));
+  $('projeto').innerHTML = '<option value="">Selecione o projeto…</option>';
+  PROJETOS.forEach(a => $('projeto').appendChild(new Option(a, a)));
+  $('projeto').value = PROJETOS.includes(orc.projeto) ? orc.projeto : '';
+  $('area').value = AREAS.includes(orc.area) ? orc.area : '';
+  ['area','projeto','ano'].forEach(id => $(id).addEventListener('change', () => { orc[id] = $(id).value; salvar(); renderOrc(); renderCtx(); }));
+  const chip = (cls, txt) => `<span class="chip ${cls}">${txt}</span>`;
+  function renderCtx(){
+    const a = orc.area ? chip('chip-area', orc.area) : chip('chip-vazio', 'Área não selecionada');
+    const p = orc.projeto ? chip('chip-proj', orc.projeto) : chip('chip-vazio', 'Projeto não selecionado');
+    $('ctx-topo').innerHTML = a + p; $('ctx-comp').innerHTML = a + p; $('ctx-orc').innerHTML = a;
+  }
+
+  // destaque dos campos obrigatórios vazios
+  function marcarObrig(){ document.querySelectorAll('.obrig').forEach(el => el.classList.toggle('vazio', !String(el.value).trim())); }
+  document.addEventListener('input', marcarObrig); document.addEventListener('change', marcarObrig);
+  function exigir(ids){ const f = ids.map($).find(el => !String(el.value).trim());
+    if (f){ marcarObrig(); f.focus(); return false; } return true; }
+
+  function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>t.style.display='none',2200); }
+  const addMes = (dt, n) => { const d = new Date(dt.getFullYear(), dt.getMonth()+n, 1);
+    const ult = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate(); d.setDate(Math.min(dt.getDate(), ult)); return d; };
+  const chaveMes = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  const rotMes = k => { const [y,m] = k.split('-').map(Number); return `${MESES[m-1]}/${String(y).slice(2)}`; };
+
+  $('btn-add').addEventListener('click', () => {
+    calc(); marcarObrig();
+    if (!atual){ toast('Preencha os campos obrigatórios (*) da viagem antes de adicionar.'); return; }
+    if (!exigir(['area','projeto'])){ toast('Selecione a Área / Centro de Custo e o Projeto da viagem (*) no bloco do orçamento.'); $('area').scrollIntoView({block:'center'}); return; }
+    const reps = Math.max(1, Number($('reps').value)||1), intervalo = Math.max(1, Number($('intervalo').value)||1);
+    orc.viagens.push(Object.assign({ id: Date.now(), projeto: orc.projeto, area: orc.area, desc: $('desc').value.trim() || `${atual.origem} → ${atual.destino}`, reps, intervalo }, atual));
+    salvar(); renderOrc(); $('desc').value = ''; $('reps').value = 1;
+    toast('Viagem adicionada ao orçamento.');
+  });
+  $('btn-limpar').addEventListener('click', () => {
+    if (!orc.viagens.length) return;
+    if (confirm('Remover todas as viagens do orçamento?')){ orc.viagens = []; salvar(); renderOrc(); }
+  });
+  $('lista').addEventListener('click', e => { const b = e.target.closest('.rm'); if (!b) return;
+    orc.viagens = orc.viagens.filter(x => String(x.id) !== b.dataset.id); salvar(); renderOrc(); });
+
+  // anos em que as viagens do orçamento acontecem (ida e volta de cada repetição)
+  function anosViagens(){
+    const anos = new Set();
+    orc.viagens.forEach(vg => { for (let r = 0; r < vg.reps; r++){
+      const ida = addMes(parseD(vg.ida), r*vg.intervalo), volta = new Date(ida); volta.setDate(volta.getDate() + vg.dias - 1);
+      anos.add(ida.getFullYear()); anos.add(volta.getFullYear()); } });
+    return [...anos].sort((a,b) => a-b);
+  }
+  function renderAno(){
+    const anos = anosViagens(), sel = $('ano');
+    const auto = anos.length ? (anos.length > 1 ? `Todos (${anos[0]} a ${anos[anos.length-1]})` : `Todos (${anos[0]})`) : 'Todos (conforme as viagens)';
+    if (orc.ano && !anos.includes(Number(orc.ano))) orc.ano = '';
+    sel.innerHTML = ''; sel.appendChild(new Option(auto, ''));
+    anos.forEach(a => sel.appendChild(new Option(String(a), String(a))));
+    sel.value = orc.ano;
+  }
+  function mesesPeriodo(){
+    const anos = anosViagens();
+    const a0 = orc.ano ? Number(orc.ano) : (anos.length ? anos[0] : anoOrc);
+    const a1 = orc.ano ? Number(orc.ano) : (anos.length ? anos[anos.length-1] : anoOrc);
+    const ini = `${a0}-01`, fim = `${a1}-12`, out = [];
+    let [y,m] = ini.split('-').map(Number); const [yf,mf] = fim.split('-').map(Number);
+    while ((y < yf || (y === yf && m <= mf)) && out.length < 60){ out.push(`${y}-${String(m).padStart(2,'0')}`); m++; if (m>12){m=1;y++;} }
+    return out;
+  }
+  // distribui cada ocorrência de cada viagem por categoria × mês, separando área e projeto
+  function matriz(){
+    const meses = mesesPeriodo(), M = {}; CATS.forEach(c => { M[c] = {}; meses.forEach(k => M[c][k] = 0); });
+    let fora = 0; const ocorrencias = [], AP = {}, regs = {};
+    orc.viagens.forEach(vg => {
+      const area = areaDe(vg), proj = projDe(vg), chaveAP = area + '\u0001' + proj;
+      for (let r = 0; r < vg.reps; r++){
+        const ida = addMes(parseD(vg.ida), r*vg.intervalo);
+        const volta = new Date(ida); volta.setDate(volta.getDate() + vg.dias - 1);
+        const oc = {vg, ida, volta, area, proj, n: r+1};
+        if (meses.includes(chaveMes(ida))) ocorrencias.push(oc);
+        vg.itens.forEach(it => {
+          const n = it.tipo === 'ida' ? 1 : (it.tipo === 'noite' ? Math.max(vg.noites,1) : vg.dias);
+          for (let k = 0; k < n; k++){
+            const dt = new Date(ida); dt.setDate(dt.getDate() + k);
+            const km = chaveMes(dt), val = it.val / n, cat = catDe(it.cat);
+            if (!(M[cat] && km in M[cat])){ fora += val; continue; }
+            M[cat][km] += val;
+            if (!AP[chaveAP]){ AP[chaveAP] = {area, proj, M:{}}; CATS.forEach(c => { AP[chaveAP].M[c] = {}; meses.forEach(m => AP[chaveAP].M[c][m] = 0); }); }
+            AP[chaveAP].M[cat][km] += val;
+            const kr = `${vg.id}|${r}|${cat}|${km}`;
+            regs[kr] = regs[kr] || {oc, cat, mes: km, val: 0}; regs[kr].val += val;
+          }
+        });
+      }
+    });
+    const aps = Object.values(AP).sort((a,b) => ordem(a.area,b.area) || ordem(a.proj,b.proj));
+    const areas = [...new Set(aps.map(x => x.area))], projetos = [...new Set(aps.map(x => x.proj))].sort(ordem);
+    const base = Object.values(regs).filter(x => x.val > 0.004)
+      .sort((a,b) => ordem(a.oc.area,b.oc.area) || ordem(a.oc.proj,b.oc.proj) || a.oc.ida-b.oc.ida || a.mes.localeCompare(b.mes) || CATS.indexOf(a.cat)-CATS.indexOf(b.cat));
+    return {meses, M, fora, ocorrencias, aps, areas, projetos, base};
+  }
+
+  function renderOrc(){
+    renderAno();
+    const {meses, M, fora, ocorrencias, aps} = matriz();
+    const totalGeral = CATS.reduce((s,c)=>s+meses.reduce((t,k)=>t+M[c][k],0),0);
+    $('o_qtd').textContent = ocorrencias.length;
+    $('o_total').textContent = BRL(totalGeral);
+    $('lista').innerHTML = orc.viagens.length ? orc.viagens.map(vg => `<tr><td>${vg.desc}</td><td><span class="ctx">${vg.area ? chip('chip-area', vg.area) : chip('chip-vazio','Área não informada')}${vg.projeto ? chip('chip-proj', vg.projeto) : chip('chip-vazio','Projeto não informado')}</span></td><td>${vg.origem} → ${vg.destino}</td>
+      <td>${fmtD(parseD(vg.ida))}</td><td class="num">${vg.dias}</td><td class="num">${vg.pessoas}</td><td>${vg.transporte}</td>
+      <td class="num">${vg.reps}${vg.reps>1?` <span class="regra">(a cada ${vg.intervalo}m)</span>`:''}</td><td class="num">${BRL(vg.total*vg.reps)}</td>
+      <td><button class="rm" title="Remover" data-id="${vg.id}">✕</button></td></tr>`).join('')
+      : `<tr><td colspan="10" class="vazio">Nenhuma viagem adicionada ainda.</td></tr>`;
+    const cel = v => `<td class="num">${v ? BRL(v) : '<span class="regra">–</span>'}</td>`;
+    const somaM = (cs, k) => cs.reduce((t,c)=>t+M[c][k],0);
+    const tem = cs => cs.some(c => meses.some(k => M[c][k] > 0));
+    $('resumo-mensal').innerHTML = totalGeral > 0 ? `<table><thead><tr><th>Categoria</th>${meses.map(k=>`<th class="num">${rotMes(k)}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody>` +
+      GRUPOS.filter(([g,cs]) => tem(cs)).map(([g,cs]) =>
+        `<tr class="grupo"><td>${g}</td>${meses.map(k=>cel(somaM(cs,k))).join('')}<td class="num">${BRL(meses.reduce((t,k)=>t+somaM(cs,k),0))}</td></tr>` +
+        cs.filter(c => tem([c])).map(c => `<tr class="sub"><td>${c}</td>${meses.map(k=>cel(M[c][k])).join('')}<td class="num">${BRL(meses.reduce((t,k)=>t+M[c][k],0))}</td></tr>`).join('')
+      ).join('') +
+      `<tr class="total"><td>Total</td>${meses.map(k=>`<td class="num">${BRL(somaM(CATS,k))}</td>`).join('')}<td class="num">${BRL(totalGeral)}</td></tr>` +
+      `<tr class="secao"><td colspan="${meses.length+2}">POR ÁREA E PROJETO</td></tr>` +
+      aps.map(x => { const vm = k => CATS.reduce((t,c)=>t+x.M[c][k],0);
+        return `<tr><td>${x.area} · ${x.proj}</td>${meses.map(k=>cel(vm(k))).join('')}<td class="num"><b>${BRL(meses.reduce((t,k)=>t+vm(k),0))}</b></td></tr>`; }).join('') +
+      `</tbody></table>` : '';
+    // barras por projeto e por categoria
+    $('proj-bloco').hidden = !(totalGeral > 0);
+    const barras = pares => { const mx = Math.max(...pares.map(p=>p[1]), 1);
+      return pares.map(([n,v]) => `<div class="barra" role="listitem" data-tip="${n}: ${BRL(v)} (${Math.round(v/totalGeral*100)}% do orçamento)"><span>${n}</span><span class="trilho"><span class="fill" style="width:${v/mx*100}%"></span></span><span class="v">${BRL(v)}</span></div>`).join(''); };
+    $('barras-proj').innerHTML = barras(aps.map(x => [`${x.area} · ${x.proj}`, CATS.reduce((t,c)=>t+meses.reduce((s,k)=>s+x.M[c][k],0),0)]));
+    $('barras-cat').innerHTML = barras(GRUPOS.map(([g,cs]) => [g, meses.reduce((t,k)=>t+somaM(cs,k),0)]).filter(p => p[1] > 0));
+    $('orc-nota').innerHTML = (fora > 0 ? `<b class="erro">Atenção:</b> ${BRL(fora)} ${orc.ano ? 'são de outros anos (escolha “Todos” no filtro Ano para ver tudo)' : 'caem fora do período e não entram no total'}. ` : '') +
+      'Hotel, refeição, lavanderia, táxi/app e locação são distribuídos pelos dias da viagem; passagens, combustível, km rodado e pedágio ficam no mês da ida. A lista fica salva neste navegador.';
+  }
+
+  // ================= EXCEL (.xlsx gerado no próprio navegador) =================
+  const enc = new TextEncoder();
+  const CRC = (() => { const t = new Uint32Array(256); for (let n=0;n<256;n++){ let c=n; for (let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+  const crc32 = b => { let c = 0xFFFFFFFF; for (let i=0;i<b.length;i++) c = CRC[(c^b[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+  function zip(files){ // armazenamento sem compressão
+    const partes = [], central = []; let off = 0;
+    files.forEach(f => {
+      const nome = enc.encode(f.name), dados = enc.encode(f.data), crc = crc32(dados);
+      const h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(8,0,true);
+      h.setUint32(14,crc,true); h.setUint32(18,dados.length,true); h.setUint32(22,dados.length,true); h.setUint16(26,nome.length,true);
+      partes.push(new Uint8Array(h.buffer), nome, dados);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true);
+      c.setUint32(16,crc,true); c.setUint32(20,dados.length,true); c.setUint32(24,dados.length,true); c.setUint16(28,nome.length,true); c.setUint32(42,off,true);
+      central.push(new Uint8Array(c.buffer), nome);
+      off += 30 + nome.length + dados.length;
+    });
+    const tamC = central.reduce((s,a)=>s+a.length,0);
+    const fim = new DataView(new ArrayBuffer(22));
+    fim.setUint32(0,0x06054b50,true); fim.setUint16(8,files.length,true); fim.setUint16(10,files.length,true);
+    fim.setUint32(12,tamC,true); fim.setUint32(16,off,true);
+    return new Blob([...partes, ...central, new Uint8Array(fim.buffer)], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  }
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const col = n => { let s=''; n++; while(n){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; };
+  // estilos: 0 normal, 1 título, 2 cabeçalho, 3 moeda, 4 moeda negrito, 5 negrito, 6 data, 7 subtítulo
+  // 8 grupo (rótulo), 9 grupo (moeda), 10 abertura recuada, 11 cabeçalho centralizado
+  function sheet(rows, larguras, merges, op){
+    op = op || {};
+    const xmlRows = rows.map((r, i) => `<row r="${i+1}"${r.nivel ? ` outlineLevel="${r.nivel}"` : ''}>` + r.map((c, j) => {
+      if (c === null || c === undefined || c === '') return '';
+      const ref = col(j)+(i+1), o = (typeof c === 'object' && !(c instanceof Date)) ? c : {v:c};
+      const s = o.s ? ` s="${o.s}"` : '';
+      if (o.f) return `<c r="${ref}"${s}><f>${esc(o.f)}</f>${typeof o.c === 'number' ? `<v>${Math.round(o.c*100)/100}</v>` : ''}</c>`;
+      if (o.v instanceof Date){ const serial = (Date.UTC(o.v.getFullYear(),o.v.getMonth(),o.v.getDate()) - Date.UTC(1899,11,30))/864e5; return `<c r="${ref}" s="${o.s||6}"><v>${serial}</v></c>`; }
+      if (typeof o.v === 'number') return `<c r="${ref}"${s}><v>${Math.round(o.v*100)/100}</v></c>`;
+      return `<c r="${ref}" t="inlineStr"${s}><is><t xml:space="preserve">${esc(o.v)}</t></is></c>`;
+    }).join('') + '</row>').join('');
+    const cols = larguras ? '<cols>' + larguras.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('') + '</cols>' : '';
+    const mc = merges && merges.length ? `<mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '';
+    const nivel = Math.max(0, ...rows.map(r => r.nivel || 0));
+    const pane = op.congelar ? `<pane ySplit="${op.congelar}" topLeftCell="A${op.congelar+1}" activePane="bottomLeft" state="frozen"/>` : '';
+    const af = op.filtro ? `<autoFilter ref="${op.filtro}"/>` : '';
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${nivel ? '<sheetPr><outlinePr summaryBelow="0"/></sheetPr>' : ''}<sheetViews><sheetView workbookViewId="0"${op.grade ? '' : ' showGridLines="0"'}>${pane}</sheetView></sheetViews>${nivel ? `<sheetFormatPr defaultRowHeight="13.2" outlineLevelRow="${nivel}"/>` : ''}${cols}<sheetData>${xmlRows}</sheetData>${af}${mc}</worksheet>`;
+  }
+  function xlsx(abas){
+    const ns = 'http://schemas.openxmlformats.org/', files = [];
+    files.push({name:'[Content_Types].xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="${ns}package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${abas.map((a,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`});
+    files.push({name:'_rels/.rels', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${ns}package/2006/relationships"><Relationship Id="rId1" Type="${ns}officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`});
+    files.push({name:'xl/workbook.xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="${ns}spreadsheetml/2006/main" xmlns:r="${ns}officeDocument/2006/relationships"><sheets>${abas.map((a,i)=>`<sheet name="${esc(a.nome)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets>${abas.some(a=>a.filtro) ? `<definedNames>${abas.map((a,i)=>a.filtro ? `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${esc(a.nome)}'!${a.filtro.replace(/([A-Z]+)(\d+)/g,'$$$1$$$2')}</definedName>` : '').join('')}</definedNames>` : ''}<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>`});
+    files.push({name:'xl/_rels/workbook.xml.rels', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="${ns}package/2006/relationships">${abas.map((a,i)=>`<Relationship Id="rId${i+1}" Type="${ns}officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${abas.length+1}" Type="${ns}officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`});
+    files.push({name:'xl/styles.xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="${ns}spreadsheetml/2006/main"><numFmts count="3"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0;-&quot;R$&quot; #,##0;&quot;–&quot;"/><numFmt numFmtId="165" formatCode="dd/mm/yyyy"/><numFmt numFmtId="166" formatCode="mmm/yy"/></numFmts><fonts count="5"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="14"/><color rgb="FF7E29ED"/><name val="Arial"/></font><font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font><font><b/><sz val="10"/><name val="Arial"/></font><font><sz val="9"/><color rgb="FF6B6B6B"/><name val="Arial"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF7E29ED"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE4D6FB"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top style="thin"><color rgb="FF231F20"/></top><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="15"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="164" fontId="3" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="3" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="3" fillId="3" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment indent="2"/></xf><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center"/></xf><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="3" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/><xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>`});
+    abas.forEach((a,i) => files.push({name:`xl/worksheets/sheet${i+1}.xml`, data: sheet(a.linhas, a.larguras, a.merges, a)}));
+    return zip(files);
+  }
+
+  $('btn-excel').addEventListener('click', () => {
+    if (!orc.viagens.length){ toast('Adicione ao menos uma viagem ao orçamento.'); return; }
+    const {meses, M, ocorrencias, fora, aps, areas, projetos, base} = matriz();
+    if (!base.length){ toast('Não há valores no ano escolhido.'); return; }
+    const periodo = `${rotMes(meses[0])} a ${rotMes(meses[meses.length-1])}`, gerado = new Date().toLocaleString('pt-BR');
+    const nM = meses.length, c0 = 4;                         // colunas: A Área, B Projeto, C Categoria, D Abertura, E.. meses, Total
+    const cT = col(c0 + nM), cM1 = col(c0), cMn = col(c0 + nM - 1);
+    const soma = arr => arr.reduce((a,b)=>a+b,0);
+    const linhaVal = (vals, st, stT, r) => [...vals.map(v => ({v, s:st})), {f:`SUM(${cM1}${r}:${cMn}${r})`, c:soma(vals), s:stT}];
+    const fSoma = (r1, r2, vals, st) => [...Array.from({length:nM+1}, (_, j) => ({f:`SUM(${col(c0+j)}${r1}:${col(c0+j)}${r2})`, c: j < nM ? vals[j] : soma(vals), s:st}))];
+    const fLista = (linhas, vals, st) => [...Array.from({length:nM+1}, (_, j) => ({f:linhas.map(r => col(c0+j)+r).join('+'), c: j < nM ? vals[j] : soma(vals), s:st}))];
+
+    // ===== Aba 1: Orçamento por mês (Área > Projeto > Categoria > Abertura) =====
+    const L = [[{v:'Orçamento de viagens' + (areas.length === 1 ? ` – ${areas[0]}` : ''), s:1}],
+      [{v:'Área(s) / Centro de Custo', s:12}, '', {v:areas.join(', '), s:12}],
+      [{v:'Projeto(s)', s:12}, '', {v:projetos.join(', '), s:12}],
+      [{v:`Período: ${periodo} · gerado em ${gerado} pelo Simulador de Viagens BairrU`, s:7}], []];
+    const cab = [{v:'Área / Centro de Custo', s:2}, {v:'Projeto', s:2}, {v:'Categoria', s:2}, {v:'Abertura', s:2}, ...meses.map(k => ({v:rotMes(k), s:2})), {v:'Total', s:2}];
+    L.push(cab);
+    const linhasArea = [], totM = meses.map(() => 0);
+    areas.forEach(area => {
+      const rA = L.length + 1, apsA = aps.filter(x => x.area === area), linhasProj = [], vA = meses.map(() => 0);
+      const linhaA = [{v:area, s:8}, {v:'', s:8}, {v:'', s:8}, {v:'', s:8}]; L.push(linhaA); linhasArea.push(rA);
+      apsA.forEach(x => {
+        const rP = L.length + 1, vP = meses.map(k => CATS.reduce((t,c)=>t+x.M[c][k],0));
+        const linhaP = [{v:area, s:12}, {v:x.proj, s:12}, '', '']; linhaP.nivel = 1; L.push(linhaP); linhasProj.push(rP);
+        GRUPOS.forEach(([g, cs]) => cs.forEach(c => {
+          const vals = meses.map(k => x.M[c][k]); if (soma(vals) <= 0.004) return;
+          const r = L.length + 1, row = [area, x.proj, g, c, ...linhaVal(vals, 3, 3, r)]; row.nivel = 2; L.push(row);
+        }));
+        linhaP.push(...fSoma(rP+1, L.length, vP, 13));
+        vP.forEach((v,j) => vA[j] += v);
+      });
+      linhaA.push(...fLista(linhasProj, vA, 9));
+      vA.forEach((v,j) => totM[j] += v);
+    });
+    L.push([{v:'Total', s:5}, {v:'', s:5}, {v:'', s:5}, {v:'', s:5}, ...fLista(linhasArea, totM, 4)]);
+    L.push([]);
+    // resumo por categoria (todas as áreas e projetos)
+    L.push([{v:'Resumo por categoria', s:12}]);
+    L.push([{v:'', s:2}, {v:'', s:2}, {v:'Categoria', s:2}, {v:'Abertura', s:2}, ...meses.map(k => ({v:rotMes(k), s:2})), {v:'Total', s:2}]);
+    const linhasG = [];
+    GRUPOS.forEach(([g, cs]) => {
+      const rg = L.length + 1, vG = meses.map(k => cs.reduce((t,c)=>t+M[c][k],0));
+      L.push([{v:'', s:8}, {v:'', s:8}, {v:g, s:8}, {v:'', s:8}, ...fSoma(rg+1, rg+cs.length, vG, 9)]); linhasG.push(rg);
+      cs.forEach(c => { const r = L.length + 1, row = ['', '', '', {v:c, s:0}, ...linhaVal(meses.map(k => M[c][k]), 3, 3, r)]; row.nivel = 1; L.push(row); });
+    });
+    L.push([{v:'Total', s:5}, {v:'', s:5}, {v:'', s:5}, {v:'', s:5}, ...fLista(linhasG, totM, 4)]);
+    L.push([]);
+    L.push([{v:'Estimativa pelos critérios da ' + semVersao(C.versao.politica_viagens) + '. Hotel, refeição, lavanderia, táxi/app e locação distribuídos pelos dias da viagem; passagens, combustível, km rodado e pedágio no mês da ida.', s:7}]);
+    L.push([{v:'Use os botões 1 / 2 / 3 à esquerda das linhas para ver só as áreas, áreas e projetos, ou tudo aberto. Para tabela dinâmica, use a aba "Base de dados".', s:7}]);
+    if (fora > 0) L.push([{v:`Atenção: R$ ${Math.round(fora).toLocaleString('pt-BR')} de viagens de outros anos não entraram nesta planilha.`, s:7}]);
+
+    // ===== Aba 2: Base de dados (uma linha por viagem × categoria × mês) =====
+    const B = [['Área / Centro de Custo','Projeto','Descrição','Ocorrência','Origem','Destino','Transporte','Viajantes','Ida','Volta','Competência','Ano','Mês','Categoria','Abertura','Valor (R$)'].map(h => ({v:h, s:2}))];
+    const grupoDe = c => GRUPOS.find(g => g[1].includes(c))[0];
+    base.forEach(x => { const [y,m] = x.mes.split('-').map(Number), o = x.oc;
+      B.push([o.area, o.proj, o.vg.desc, o.n, o.vg.origem, o.vg.destino, o.vg.transporte, o.vg.pessoas, {v:o.ida}, {v:o.volta},
+        {v:new Date(y, m-1, 1), s:14}, y, m, grupoDe(x.cat), x.cat, {v:x.val, s:3}]); });
+
+    // ===== Aba 3: Viagens (uma linha por viagem/repetição) =====
+    const V = [[{v:'Viagens do orçamento', s:1}], []];
+    const fixas = ['Área / Centro de Custo','Projeto','Descrição','Origem','Destino','Ida','Volta','Dias','Viajantes','Transporte'];
+    const hG = V.length + 1, merges = [];
+    const linhaG = fixas.map(h => ({v:h, s:2}));
+    fixas.forEach((h, j) => merges.push(`${col(j)}${hG}:${col(j)}${hG+1}`));
+    let cAt = fixas.length;
+    GRUPOS.forEach(([g, cs]) => { linhaG.push({v:g, s:11}); for (let k = 1; k < cs.length; k++) linhaG.push({v:'', s:11});
+      if (cs.length > 1) merges.push(`${col(cAt)}${hG}:${col(cAt+cs.length-1)}${hG}`); cAt += cs.length; });
+    linhaG.push({v:'Total', s:2}); merges.push(`${col(cAt)}${hG}:${col(cAt)}${hG+1}`);
+    V.push(linhaG);
+    V.push([...fixas.map(() => ({v:'', s:2})), ...CATS.map(h => ({v:h, s:2})), {v:'', s:2}]);
+    const F = fixas.length, vi = V.length + 1;
+    const ocs = ocorrencias.slice().sort((a,b) => ordem(a.area,b.area) || ordem(a.proj,b.proj) || a.ida-b.ida);
+    const totCat = CATS.map(() => 0);
+    ocs.forEach((o, i) => { const r = vi + i, porCat = {}; o.vg.itens.forEach(it => porCat[catDe(it.cat)] = (porCat[catDe(it.cat)]||0) + it.val);
+      const vals = CATS.map(c => porCat[c]||0); vals.forEach((v,j) => totCat[j] += v);
+      V.push([o.area, o.proj, o.vg.desc, o.vg.origem, o.vg.destino, {v:o.ida}, {v:o.volta}, o.vg.dias, o.vg.pessoas, o.vg.transporte,
+        ...vals.map(v => ({v, s:3})), {f:`SUM(${col(F)}${r}:${col(F-1+CATS.length)}${r})`, c:soma(vals), s:4}]); });
+    const vf = vi + ocs.length - 1;
+    V.push([{v:'Total', s:5}, ...fixas.slice(1).map(() => ''), ...CATS.map((c,j) => ({f:`SUM(${col(F+j)}${vi}:${col(F+j)}${vf})`, c:totCat[j], s:4})), {f:`SUM(${col(F+CATS.length)}${vi}:${col(F+CATS.length)}${vf})`, c:soma(totCat), s:4}]);
+
+    // ===== Aba 4: Critérios =====
+    const Rg = R, K = [[{v:'Critérios usados na simulação', s:1}], [], [{v:'Critério', s:2}, {v:'Valor', s:2}],
+      ['Aéreo apenas acima de (km)', Rg.aereo_km_minimo], ['Antecedência aéreo (dias)', Rg.antecedencia_dias.aereo],
+      ['Antecedência hotel individual / grupo (dias)', `${Rg.antecedencia_dias.hotel_individual} / ${Rg.antecedencia_dias.hotel_grupo}`],
+      ['Teto diária capitais e RM', {v:Rg.hotel_teto_diaria.capital_ou_rm, s:3}], ['Teto diária demais cidades', {v:Rg.hotel_teto_diaria.demais, s:3}],
+      ['Refeição por dia', {v:Rg.refeicao_viagem_dia, s:3}], ['Lavanderia por semana (acima de ' + Rg.lavanderia_dias_minimos + ' dias)', {v:Rg.lavanderia_valor_semana, s:3}],
+      ['Quilômetro rodado', `(gasolina ÷ ${Rg.km_consumo_km_por_litro} km/l) × ${n2(Rg.km_fator)}`],
+      ['Tarifa aérea de referência por trecho', {v:E.aereo_trecho_mediana, s:3}], ['Diária de hotel de referência', {v:E.hotel_diaria_mediana, s:3}],
+      ['Gasolina (R$/litro)', Number($('p_gas').value)], ['Táxi/app por corrida', {v:Number($('p_taxi').value), s:3}]];
+
+    const blob = xlsx([
+      {nome:'Orçamento por mês', linhas:L, larguras:[24, 18, 14, 18, ...meses.map(()=>11), 13], congelar:6},
+      {nome:'Base de dados', linhas:B, larguras:[24,18,26,10,16,18,14,9,11,11,12,7,6,14,18,13], congelar:1, grade:true, filtro:`A1:P${B.length}`},
+      {nome:'Viagens', linhas:V, merges, larguras:[24,18,28,16,18,11,11,6,9,14, ...CATS.map(()=>13), 13]},
+      {nome:'Critérios', linhas:K, larguras:[46,26]}]);
+    const nomeArq = (areas.length === 1 ? areas[0] : 'Varias_areas').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `Orcamento_Viagens_${nomeArq}_${meses[0]}_a_${meses[meses.length-1]}.xlsx`;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    toast('Excel gerado.');
+  });
+
+  calc(); renderOrc(); renderCtx(); marcarObrig();
+})();
+</script>
+</body>
+</html>
